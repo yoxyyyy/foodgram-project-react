@@ -6,17 +6,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import exceptions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow
-
 from .filters import RecipeFilter, IngredientFilter
 from .mixins import ListRetrieveMixin
 from .pagination import CustomPaginator
-from .permissions import IsAuthorOrReadOnly
 from .serializers import (CustomUserSerializer, GetRecipeSerializer,
                           IngredientSerializer, PostRecipeSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
@@ -58,10 +56,7 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         user = request.user
         favorites = user.followers.all()
-        users_id = [
-            favorite_instance.author.id for favorite_instance in favorites]
-        users = User.objects.filter(id__in=users_id)
-        paginated_queryset = self.paginate_queryset(users)
+        paginated_queryset = self.paginate_queryset(favorites)
         serializer = self.serializer_class(paginated_queryset, many=True)
         return self.get_paginated_response(serializer.data)
 
@@ -96,7 +91,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для рецептов."""
 
     queryset = Recipe.objects.all()
-    permission_classes = [IsAuthorOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPaginator
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -105,6 +100,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return GetRecipeSerializer
         return PostRecipeSerializer
+
+
+
+# соеденить
 
     @action(detail=True, methods=('POST', 'DELETE'), permission_classes=[
         IsAuthenticated])
@@ -148,17 +147,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], permission_classes=[
         IsAuthenticated])
     def download_shopping_cart(self, request):
-        shopping_cart = ShoppingCart.objects.filter(user=request.user)
-        recipes_id = [item.recipe.id for item in shopping_cart]
-        ingredients = RecipeIngredient.objects.filter(
-            recipe__in=recipes_id
-        ).values('ingredient').annotate(amount=Sum('amount'))
+        ingredients = RecipeIngredient.objects.values('ingredient').annotate(amount=Sum('amount'))
         final_list = 'Список покупок от Foodgram\n\n'
         for item in ingredients:
-            ingredient = Ingredient.objects.get(id=item.get('ingredient'))
             amount = item.get('amount')
             final_list += (
-                f'{ingredient.name} ({ingredient.measurement_unit}) {amount}\n'
+                f'{item.name} ({item.measurement_unit}) {amount}\n'
             )
 
         filename = 'foodgram_shopping_list.txt'

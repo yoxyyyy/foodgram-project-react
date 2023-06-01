@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -13,7 +14,8 @@ class Tag(models.Model):
     color = models.CharField(
         'Цвет',
         max_length=7,
-        unique=True
+        unique=True,
+        validators=[RegexValidator('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')],
     )
     slug = models.SlugField(
         'Слаг',
@@ -68,7 +70,7 @@ class Recipe(models.Model):
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        # through='RecipeIngredient',
+        through='RecipeIngredient',
         verbose_name='Ингредиенты',
     )
     tags = models.ManyToManyField(
