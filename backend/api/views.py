@@ -101,48 +101,41 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return GetRecipeSerializer
         return PostRecipeSerializer
 
+    def create_or_delete_recipe(self, user, recipe_pk, request, cls):
+        post_validation_errors = {
+            'Favorite': 'Рецепт уже есть в избранном.',
+            'ShoppingCart': 'Рецепт уже есть в списке покупок.'
+        }
+        delete_validation_errors = {
+            'Favorite': 'Рецепта нет в ибранном.',
+            'ShoppingCart': 'Рецепта нет в списке покупок.'
+        }
+        recipe = get_object_or_404(Recipe, pk=recipe_pk)
 
-
-# соеденить
+        if request.method == 'POST':
+            if cls.objects.filter(user=user, recipe=recipe).exists():
+                raise exceptions.ValidationError(post_validation_errors[cls.__name__])
+            cls.objects.create(user=user, recipe=recipe)
+            serializer = ShortRecipeSerializer(instance=recipe, context={
+                'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            if not cls.objects.filter(user=user, recipe=recipe).exists():
+                raise exceptions.ValidationError(delete_validation_errors[cls.__name__])
+            cls.objects.filter(user=user, recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=('POST', 'DELETE'), permission_classes=[
         IsAuthenticated])
     def favorite(self, request, pk=None):
         user = self.request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if request.method == 'POST':
-            if Favorite.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(
-                    'Рецепт уже есть в избранном.')
-            Favorite.objects.create(user=user, recipe=recipe)
-            serializer = ShortRecipeSerializer(instance=recipe, context={
-                'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            if not Favorite.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError('Рецепта нет в ибранном.')
-            Favorite.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        self.create_or_delete_recipe(user, pk, request, Favorite)
 
     @action(detail=True, methods=('POST', 'DELETE'), permission_classes=[
         IsAuthenticated])
     def shopping_cart(self, request, pk=None):
         user = self.request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if request.method == 'POST':
-            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(
-                    'Рецепт уже есть в списке покупок.')
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = ShortRecipeSerializer(instance=recipe, context={
-                'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            if not ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(
-                    'Рецепта нет в списке покупок.')
-            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        self.create_or_delete_recipe(user, pk, request, ShoppingCart)
 
     @action(detail=False, methods=['GET'], permission_classes=[
         IsAuthenticated])

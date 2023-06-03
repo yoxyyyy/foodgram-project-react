@@ -164,22 +164,22 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         if cooking_time <= 0:
             raise exceptions.ValidationError('Минимальное время приготовления 1 минута.')
         return cooking_time
-# соеденить
+
+    def get_ingredients(self.ingredients):
+        for ingredient in ingredients:
+            amount = ingredient['amount']
+            ingredient_instance = ingredient['id']
+
+            yield amount, get_object_or_404(Ingredient, pk=ingredient_instance)
+
     @transaction.atomic
     def create(self, validated_data):
         author = self.context.get('request').user
         tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags)
-
         recipe_ingredients = []
-        for ingredient in ingredients:
-            amount = ingredient['amount']
-            ingredient_instance = ingredient['id']
-            ingredient = get_object_or_404(Ingredient, pk=ingredient_instance)
-
+        for amount, ingredient in self.get_ingredients(validated_data.pop('ingredients')):
             recipe_ingredients.append(RecipeIngredient(
                 recipe=recipe,
                 ingredient=ingredient,
@@ -192,33 +192,15 @@ class PostRecipeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tags = validated_data.pop('tags')
         instance.tags.set(tags)
-
-        ingredients = validated_data.pop('ingredients')
         instance.ingredients.clear()
 
-        for ingredient in ingredients:
-            amount = ingredient['amount']
-            ingredient_instance = ingredient['id']
-            ingredient = get_object_or_404(Ingredient, pk=ingredient_instance)
-
+        for amount, ingredient in self.get_ingredients(validated_data.pop('ingredients')):
             RecipeIngredient.objects.update_or_create(
                 recipe=instance,
                 ingredient=ingredient,
                 amount=amount
             )
-
         return super().update(instance, validated_data)
-
-    def to_representation(self, instance):
-        serializer = GetRecipeSerializer(
-            instance,
-            context={'request': self.context.get('request')}
-        )
-        return serializer.data
-
-    class Meta:
-        model = Recipe
-        exclude = ('created',)
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
