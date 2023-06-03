@@ -165,7 +165,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
             raise exceptions.ValidationError('Минимальное время приготовления 1 минута.')
         return cooking_time
 
-    def get_ingredients(self.ingredients):
+    def get_ingredients(self, ingredients):
         for ingredient in ingredients:
             amount = ingredient['amount']
             ingredient_instance = ingredient['id']
