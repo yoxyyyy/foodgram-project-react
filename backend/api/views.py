@@ -19,6 +19,8 @@ from .serializers import (CustomUserSerializer, GetRecipeSerializer,
                           IngredientSerializer, PostRecipeSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
                           TagSerializer)
+from .constants import POST_VALIDATION_ERRORS, DELETE_VALIDATION_ERRORS
+from .permissions import IsAuthorOrReadOnly
 
 User = get_user_model()
 
@@ -91,7 +93,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для рецептов."""
 
     queryset = Recipe.objects.all()
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
     pagination_class = CustomPaginator
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -102,26 +104,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return PostRecipeSerializer
 
     def create_or_delete_recipe(self, user, recipe_pk, request, cls):
-        post_validation_errors = {
-            'Favorite': 'Рецепт уже есть в избранном.',
-            'ShoppingCart': 'Рецепт уже есть в списке покупок.'
-        }
-        delete_validation_errors = {
-            'Favorite': 'Рецепта нет в ибранном.',
-            'ShoppingCart': 'Рецепта нет в списке покупок.'
-        }
         recipe = get_object_or_404(Recipe, pk=recipe_pk)
 
         if request.method == 'POST':
             if cls.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(post_validation_errors[cls.__name__])
+                raise exceptions.ValidationError(POST_VALIDATION_ERRORS[cls.__name__])
             cls.objects.create(user=user, recipe=recipe)
             serializer = ShortRecipeSerializer(instance=recipe, context={
                 'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
             if not cls.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(delete_validation_errors[cls.__name__])
+                raise exceptions.ValidationError(DELETE_VALIDATION_ERRORS[cls.__name__])
             cls.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
