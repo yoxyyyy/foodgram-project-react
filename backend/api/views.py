@@ -4,23 +4,24 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import exceptions, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
-
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
+from rest_framework import exceptions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.response import Response
 from users.models import Follow
-from .filters import RecipeFilter, IngredientFilter
+
+from .constants import DELETE_VALIDATION_ERRORS, POST_VALIDATION_ERRORS
+from .filters import IngredientFilter, RecipeFilter
 from .mixins import ListRetrieveMixin
 from .pagination import CustomPaginator
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (CustomUserSerializer, GetRecipeSerializer,
                           IngredientSerializer, PostRecipeSerializer,
                           ShortRecipeSerializer, SubscriptionSerializer,
                           TagSerializer)
-from .constants import POST_VALIDATION_ERRORS, DELETE_VALIDATION_ERRORS
-from .permissions import IsAuthorOrReadOnly
 
 User = get_user_model()
 
@@ -108,14 +109,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if request.method == 'POST':
             if cls.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(POST_VALIDATION_ERRORS[cls.__name__])
+                raise exceptions.ValidationError(
+                    POST_VALIDATION_ERRORS[cls.__name__])
             cls.objects.create(user=user, recipe=recipe)
             serializer = ShortRecipeSerializer(instance=recipe, context={
                 'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
             if not cls.objects.filter(user=user, recipe=recipe).exists():
-                raise exceptions.ValidationError(DELETE_VALIDATION_ERRORS[cls.__name__])
+                raise exceptions.ValidationError(
+                    DELETE_VALIDATION_ERRORS[cls.__name__])
             cls.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -134,7 +137,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], permission_classes=[
         IsAuthenticated])
     def download_shopping_cart(self, request):
-        ingredients = RecipeIngredient.objects.values('ingredient').annotate(amount=Sum('amount'))
+        ingredients = RecipeIngredient.objects.values(
+            'ingredient').annotate(amount=Sum('amount'))
         final_list = 'Список покупок от Foodgram\n\n'
         for item in ingredients:
             amount = item.get('amount')

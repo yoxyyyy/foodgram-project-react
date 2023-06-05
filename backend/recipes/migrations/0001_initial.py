@@ -91,9 +91,18 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Favorite',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('recipe', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorites', to='recipes.recipe', verbose_name='Рецепт')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorites', to=settings.AUTH_USER_MODEL, verbose_name='Пользователь')),
+                ('id', models.BigAutoField(auto_created=True,
+                                           primary_key=True,
+                                           serialize=False,
+                                           verbose_name='ID')),
+                ('recipe', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='favorites',
+                    to='recipes.recipe', verbose_name='Рецепт')),
+                ('user', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='favorites', to=settings.AUTH_USER_MODEL,
+                    verbose_name='Пользователь')),
             ],
             options={
                 'verbose_name': 'Избранное',
@@ -103,10 +112,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='shoppingcart',
-            constraint=models.UniqueConstraint(fields=('user', 'recipe'), name='unique_user_recipe_cart'),
+            constraint=models.UniqueConstraint(fields=(
+                'user', 'recipe'), name='unique_user_recipe_cart'),
         ),
         migrations.AddConstraint(
             model_name='favorite',
-            constraint=models.UniqueConstraint(fields=('user', 'recipe'), name='unique_user_recipe_favorite'),
+            constraint=models.UniqueConstraint(fields=(
+                'user', 'recipe'), name='unique_user_recipe_favorite'),
         ),
     ]
