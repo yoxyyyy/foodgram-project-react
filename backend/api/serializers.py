@@ -157,7 +157,8 @@ class PostRecipeSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, ingredients):
         if not ingredients:
-            raise exceptions.ValidationError('Должен быть хотя бы один ингредиент.')
+            raise exceptions.ValidationError(
+                'Должен быть хотя бы один ингредиент.')
 
         if len(ingredients) != len(set(ingredient['id']
                                        for ingredient in ingredients)):
