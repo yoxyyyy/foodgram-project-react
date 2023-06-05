@@ -1,0 +1,116 @@
+name: Foodgram workflow
+
+on: [push]
+
+jobs:
+  test_flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pep8-naming flake8-broken-line flake8-return flake8-isort
+          pip install -r requirements.txt
+      - name: Test with flake8
+        run: |
+          cd backend
+          flake8 .
+  
+  build_image_and_push_new_image_to_docker_hub:
+    name: Pushing backend image to DockerHub
+    runs-on: ubuntu-latest
+    needs: test_flake8
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to Docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./backend
+          push: true
+          tags: yoxyyyy/foodgram_backend:latest
+
+  build_and_push_frontend_image_to_docker_hub:
+    name: Pushing frontend image to DockerHub
+    runs-on: ubuntu-latest
+    needs: test_flake8
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to Docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./frontend
+          push: true
+          tags: yoxyyyy/foodgram_frontend:latest
+
+  deploy:
+    name: Deploy to a remote server
+    runs-on: ubuntu-latest
+    needs:
+      - test_flake8
+      - build_and_push_backend_image_to_docker_hub
+      - build_and_push_frontend_image_to_docker_hub
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          script: |
+            cd infra
+            sudo rm -f .env
+            sudo touch .env
+            sudo chmod 666 .env
+            
+            echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
+            echo DB_NAME=${{ secrets.DB_NAME }} >> .env
+            echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
+            echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
+            echo DB_HOST=${{ secrets.DB_HOST }} >> .env
+            echo DB_PORT=${{ secrets.DB_PORT }} >> .env
+            
+            sudo docker-compose stop
+            sudo docker compose rm backend
+            sudo docker-compose rm frontend
+            
+            sudo docker pull yoxyyyy/foodgram_frontend:latest
+            sudo docker pull yoxyyyy/foodgram_backend:latest
+            sudo docker-compose up -d
+  
+  send_massage:
+    runs-on: ubuntu-latest
+    needs:
+      - test_flake8
+      - build_and_push_backend_image_to_docker_hub
+      - build_and_push_frontend_image_to_docker_hub
+      - deploy
+    steps:
+      - name: Send message to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: ${{ github.workflow }} успешен!

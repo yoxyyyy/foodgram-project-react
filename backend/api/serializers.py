@@ -154,9 +154,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         if not ingredients:
             raise exceptions.ValidationError('Должен быть хотя бы один ингредиент.')
 
-        len_list = len(ingredients)
-        len_set = len(set(ingredient['id'] for ingredient in ingredients))
-        if len_list != len_set:
+        if len(ingredients) != len(set(ingredient['id'] for ingredient in ingredients)):
             raise exceptions.ValidationError('У рецепка не может быть два одинаковых игредиента.')
         return ingredients
 
