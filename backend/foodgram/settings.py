@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_KEY', 'some_key')
@@ -10,9 +11,15 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '84.252.143.165',
-    '127.0.0.1',
+    'backend',
+    '*'
 ]
 
+# CSRF_TRUSTED_ORIGINS = [
+#     'http://localhost',
+#     'http://localhost:8000',
+#     'http://84.252.143.165'
+# ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -120,7 +127,7 @@ AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-         'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
@@ -138,7 +145,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
     'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',
+        'user_create': 'api.serializers.UserCreateSerializer',
         'current_user': 'api.serializers.CustomUserSerializer',
         'user': 'api.serializers.CustomUserSerializer',
     },
@@ -147,3 +154,5 @@ DJOSER = {
         'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
     }
 }
+
+EMPTY_VALUE = '-пусто-'
