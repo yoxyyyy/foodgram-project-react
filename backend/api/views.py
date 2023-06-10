@@ -15,7 +15,7 @@ from users.models import Follow
 
 from .constants import DELETE_VALIDATION_ERRORS, POST_VALIDATION_ERRORS
 from .filters import IngredientFilter, RecipeFilter
-from .mixins import ListRetrieveMixin
+# from .mixins import ListRetrieveMixin
 from .pagination import CustomPaginator
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (CustomUserSerializer, GetRecipeSerializer,
@@ -26,7 +26,7 @@ from .serializers import (CustomUserSerializer, GetRecipeSerializer,
 User = get_user_model()
 
 
-class TagViewSet(ListRetrieveMixin):
+class TagViewSet(viewsets.ModelViewSet):
     """ViewSet для тегов."""
 
     queryset = Tag.objects.all()
@@ -34,7 +34,7 @@ class TagViewSet(ListRetrieveMixin):
     permission_classes = [AllowAny]
 
 
-class IngredientViewSet(ListRetrieveMixin):
+class IngredientViewSet(viewsets.ModelViewSet):
     """ViewSet для ингредиентов."""
 
     queryset = Ingredient.objects.all()
