@@ -32,6 +32,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [AllowAny]
+    pagination_class = CustomPaginator
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -41,6 +42,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = [AllowAny]
     filterset_class = IngredientFilter
+    pagination_class = CustomPaginator
 
 
 class CustomUserViewSet(UserViewSet):
