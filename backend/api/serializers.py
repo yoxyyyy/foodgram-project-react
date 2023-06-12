@@ -134,7 +134,7 @@ class ShortIngredientSerializerForRecipe(serializers.ModelSerializer):
     amount = serializers.IntegerField()
 
     class Meta:
-        model = Ingredient
+        model = RecipeIngredient
         fields = ('id', 'amount')
 
 
