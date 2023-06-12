@@ -15,7 +15,7 @@ from users.models import Follow
 
 from .constants import DELETE_VALIDATION_ERRORS, POST_VALIDATION_ERRORS
 from .filters import IngredientFilter, RecipeFilter
-# from .mixins import ListRetrieveMixin
+from .mixins import ListRetrieveMixin
 from .pagination import CustomPaginator
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (CustomUserSerializer, GetRecipeSerializer,
@@ -26,27 +26,25 @@ from .serializers import (CustomUserSerializer, GetRecipeSerializer,
 User = get_user_model()
 
 
-class TagViewSet(viewsets.ModelViewSet):
-    """ViewSet для тегов."""
+class TagViewSet(ListRetrieveMixin):
+    """Теги."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [AllowAny]
-    pagination_class = CustomPaginator
 
 
-class IngredientViewSet(viewsets.ModelViewSet):
-    """ViewSet для ингредиентов."""
+class IngredientViewSet(ListRetrieveMixin):
+    """Ингредиенты."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = [AllowAny]
     filterset_class = IngredientFilter
-    pagination_class = CustomPaginator
 
 
 class CustomUserViewSet(UserViewSet):
-    """ViewSet для пользователей."""
+    """Юзеры."""
 
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
@@ -61,7 +59,8 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         user = request.user
         favorites = user.followers.all()
-        paginated_queryset = self.paginate_queryset(favorites)
+        users = User.objects.filter(id__in=[f.author.id for f in favorites])
+        paginated_queryset = self.paginate_queryset(users)
         serializer = self.serializer_class(paginated_queryset, many=True)
         return self.get_paginated_response(serializer.data)
 
@@ -93,7 +92,7 @@ class CustomUserViewSet(UserViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """ViewSet для рецептов."""
+    """Рецепты."""
 
     queryset = Recipe.objects.all()
     permission_classes = [IsAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
@@ -128,24 +127,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
         IsAuthenticated])
     def favorite(self, request, pk=None):
         user = self.request.user
-        self.create_or_delete_recipe(user, pk, request, Favorite)
+        return self.create_or_delete_recipe(user, pk, request, Favorite)
 
     @action(detail=True, methods=('POST', 'DELETE'), permission_classes=[
         IsAuthenticated])
     def shopping_cart(self, request, pk=None):
         user = self.request.user
-        self.create_or_delete_recipe(user, pk, request, ShoppingCart)
+        return self.create_or_delete_recipe(user, pk, request, ShoppingCart)
 
     @action(detail=False, methods=['GET'], permission_classes=[
         IsAuthenticated])
     def download_shopping_cart(self, request):
         ingredients = RecipeIngredient.objects.values(
-            'ingredient').annotate(amount=Sum('amount'))
+            'ingredient__name', 'ingredient__measurement_unit').annotate(
+            amount=Sum('amount'))
+        print(ingredients)
         final_list = 'Список покупок от Foodgram\n\n'
         for item in ingredients:
             amount = item.get('amount')
             final_list += (
-                f'{item.name} ({item.measurement_unit}) {amount}\n'
+                f'{item["ingredient__name"]} ({item["ingredient__measurement_unit"]}) {amount}\n'
             )
 
         filename = 'foodgram_shopping_list.txt'

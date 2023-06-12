@@ -13,8 +13,8 @@ User = get_user_model()
 
 class CustomUserSerializer(UserSerializer):
     """
-    Кастомный сериализатор для эндпоинтов
-    me/, users/ и users/{id}/.
+    Сериализатор для эндпоинтов
+    me, users и users/id/
     """
 
     is_subscribed = serializers.SerializerMethodField(read_only=True)
@@ -33,8 +33,8 @@ class CustomUserSerializer(UserSerializer):
 
 class UserCreateSerializer(UserCreateSerializer):
     """
-    Кастомный сериализатор для эндпоинта
-    users/.
+    Cериализатор для эндпоинта
+    users/
     """
 
     class Meta(UserCreateSerializer.Meta):
@@ -139,7 +139,7 @@ class ShortIngredientSerializerForRecipe(serializers.ModelSerializer):
 
 
 class PostRecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор для рецептов: post, delete, patch http методы."""
+    """Сериализатор для рецептов: post, delete, patch"""
 
     author = CustomUserSerializer(read_only=True)
     tags = serializers.PrimaryKeyRelatedField(
@@ -183,11 +183,11 @@ class PostRecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         author = self.context.get('request').user
         tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags)
         recipe_ingredients = []
-        for amount, ingredient in self.get_ingredients(validated_data.
-                                                       pop('ingredients')):
+        for amount, ingredient in self.get_ingredients(ingredients):
             recipe_ingredients.append(RecipeIngredient(
                 recipe=recipe,
                 ingredient=ingredient,
@@ -210,6 +210,10 @@ class PostRecipeSerializer(serializers.ModelSerializer):
                 amount=amount
             )
         return super().update(instance, validated_data)
+
+    class Meta:
+        model = Recipe
+        fields = '__all__'
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

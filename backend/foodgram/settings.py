@@ -15,11 +15,6 @@ ALLOWED_HOSTS = [
     '*'
 ]
 
-# CSRF_TRUSTED_ORIGINS = [
-#     'http://localhost',
-#     'http://localhost:8000',
-#     'http://84.252.143.165'
-# ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -69,8 +64,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'foodgram.wsgi.application'
 
-
-# Database
 
 DATABASES = {
     'default': {
@@ -135,10 +128,6 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
-    'DEFAULT_PAGINATION_CLASS': [
-        'api.pagination.CustomPaginator',
-    ],
-    'PAGE_SIZE': 6,
 }
 
 DJOSER = {
