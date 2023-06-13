@@ -76,11 +76,17 @@ docker login
 docker build -t username/название_образа:latest .
 docker push username/название_образа:latest
 ```
-5. На удаленном сервере выполните 
+7. Чтобы настроить сервер для работы с Docker, подключитесь к нему через консоль. Адрес сервера указывается по IP или доменному имени. Команда для подключения вводится в формате:
 ```
+ssh name@ip
+```
+6. На удаленном сервере выполните 
+```
+sudo systemctl stop nginx 
+sudo apt install docker.io
 sudo docker-compose up -d --build
 ```
-6. После запуска контейнеров нужно выполнить миграции, накатить статику и загрузить даныные
+7. После запуска контейнеров нужно выполнить миграции, накатить статику и загрузить даныные
 ```
 sudo docker ps -a 
 sudo docker exec -it <имя> python manage.py migrate
@@ -88,6 +94,8 @@ sudo docker exec -it <имя> python manage.py collectstatic
 sudo docker-compose exec <имя> python manage.py createsuperuser
 sudo docker exec -it <имя> python manage.py load_ingredients_json
 ```
-7. Ссылка на проект 
+8. Ссылка на проект 
+```
 docs: ip/adi/docs
 admin: ip/admin
+```
