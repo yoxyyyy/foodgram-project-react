@@ -105,6 +105,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return GetRecipeSerializer
         return PostRecipeSerializer
 
+    def create_or_update_recipe(self, request, action):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if action == 'create':
+            self.perform_create(serializer)
+        elif action == 'update':
+            self.perform_update(serializer)
+        else:
+            raise Exception(f'Unknown action: {action}')
+
+        serializer = GetRecipeSerializer(
+            instance=serializer.instance, context={'request': request})
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def create(self, request, *args, **kwargs):
+        return self.create_or_update_recipe(request=request, action='create')
+
+    def update(self, request, *args, **kwargs):
+        return self.create_or_update_recipe(request=request, action='update')
+
     def create_or_delete_recipe(self, user, recipe_pk, request, cls):
         recipe = get_object_or_404(Recipe, pk=recipe_pk)
 
@@ -138,15 +161,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], permission_classes=[
         IsAuthenticated])
     def download_shopping_cart(self, request):
-        ingredients = RecipeIngredient.objects.values(
+        shopping_cart = ShoppingCart.objects.filter(user=request.user)
+        recipes_id = [i.recipe.id for i in shopping_cart]
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__in=recipes_id).values(
             'ingredient__name', 'ingredient__measurement_unit').annotate(
             amount=Sum('amount'))
-        print(ingredients)
         final_list = 'Список покупок от Foodgram\n\n'
         for item in ingredients:
             amount = item.get('amount')
             final_list += (
-                f'{item["ingredient__name"]} ({item["ingredient__measurement_unit"]}) {amount}\n'
+                f'{item["ingredient__name"]}'
+                f'({item["ingredient__measurement_unit"]}) {amount}\n'
             )
 
         filename = 'foodgram_shopping_list.txt'

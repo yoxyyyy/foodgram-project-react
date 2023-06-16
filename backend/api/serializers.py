@@ -219,7 +219,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.SerializerMethodField(read_only=True)
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
@@ -228,6 +228,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         return True
+
+    def get_recipes(self, object):
+        queryset = object.recipes.all()[:3]
+
+        return ShortRecipeSerializer(queryset, many=True).data
 
     class Meta:
         model = User
