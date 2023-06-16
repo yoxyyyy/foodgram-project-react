@@ -88,6 +88,7 @@ sudo docker-compose up -d --build
 ```
 7. После запуска контейнеров нужно выполнить миграции, накатить статику и загрузить даныные
 ```
+
 sudo docker ps -a 
 sudo docker exec -it <имя> python manage.py migrate
 sudo docker exec -it <имя> python manage.py collectstatic
@@ -99,3 +100,9 @@ sudo docker exec -it <имя> python manage.py load_ingredients_json
 docs: ip/adi/docs
 admin: ip/admin
 ```
+
+http://84.252.143.165/recipes
+
+admin: 
+login stch 
+password 1234
