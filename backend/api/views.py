@@ -105,28 +105,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return GetRecipeSerializer
         return PostRecipeSerializer
 
-    def create_or_update_recipe(self, request, action):
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if action == 'create':
-            self.perform_create(serializer)
-        elif action == 'update':
-            self.perform_update(serializer)
-        else:
-            raise Exception(f'Unknown action: {action}')
-
+        serializer. is_valid(raise_exception=True)
+        self.perform_create(serializer)
         serializer = GetRecipeSerializer(
             instance=serializer.instance, context={'request': request})
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def create(self, request, *args, **kwargs):
-        return self.create_or_update_recipe(request=request, action='create')
-
     def update(self, request, *args, **kwargs):
-        return self.create_or_update_recipe(request=request, action='update')
+        recipe = Recipe.objects.get(pk=kwargs.get('pk'))
+        serializer = self.get_serializer(
+            recipe, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        serializer = GetRecipeSerializer(
+            instance=serializer.instance, context={'request': request})
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     def create_or_delete_recipe(self, user, recipe_pk, request, cls):
         recipe = get_object_or_404(Recipe, pk=recipe_pk)
