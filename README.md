@@ -103,5 +103,5 @@ admin: ip/admin
 
 http://84.252.143.165/recipes
 
-login stch 
+login stch
 password 1234
